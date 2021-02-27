@@ -60,7 +60,7 @@ void setup() {
 
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
-    // Serial.println("Communication with WiFi module failed!");
+    Serial.println("Communication with WiFi module failed!");
     // don't continue
     while (true);
   }
@@ -74,7 +74,7 @@ void setup() {
 
   // close serial connection to have more ressources for WIFI connection
   // TODO add debug flag to be bale to use serial for debug reasons
-  Serial.end();
+  //  Serial.end();
 }
 
 
@@ -96,9 +96,9 @@ void loop() {
 
       //      delay(5000);
       myDelay(5000);
-    } 
-    
-    
+    }
+
+
     if (wifiClient) {
       // check if client exits from last loop iteration
 
@@ -138,17 +138,8 @@ void loop() {
           }
         }
         else {
-          if (c == '2') // clear screen
-          {
-            clearRequest = true;
-            clearDisplay();
-          }
-          else if (c == '3') // state
-          {
-            stateRequest = true;
-          }
-          else // image data
-          {
+          // image data
+          if  (c == '0' || c == '1') {
             // first create image file
             if (!imageRequest)
             {
@@ -158,12 +149,22 @@ void loop() {
 
             // write to image file
             MySDCard_WriteImagePart(c);
-
+            myDelay(5);
 
             chunkCounter++;
-            if (chunkCounter == 128)
+            if (chunkCounter == 4096)
               break;
           }
+          else if (c == '2') // clear screen
+          {
+            clearRequest = true;
+            clearDisplay();
+          }
+          else if (c == '3') // state
+          {
+            stateRequest = true;
+          }
+
         }
       }
 
@@ -192,14 +193,11 @@ void loop() {
       //      delay(2000);
       myDelay(2000);
     }
-
-
-
   }
 
 
   //    delay(100);
-//    myDelay(100);
+  myDelay(100);
 }
 
 void myDelay(long microSeconds)
@@ -252,9 +250,13 @@ void udpBroadcast() {
 void drawImage() {
   MySDCard_CloseImage();
   wakeUpDisplay();
-  clearDisplay();
+  //  clearDisplay();
   MySDCard_OpenImage();
 
+
+  Paint_NewImage(IMAGE_BW, EPD_7IN5_WIDTH, EPD_7IN5_HEIGHT, IMAGE_ROTATE_0, IMAGE_COLOR_INVERTED);
+  Paint_Clear(BLACK);
+ 
   for (int y = 0; y < EPD_7IN5BC_HEIGHT; y++) {
     for (int x = 0; x < EPD_7IN5BC_WIDTH; x++) {
       if (MySDCard_ReadPixel() == '1') {
@@ -270,8 +272,8 @@ void drawImage() {
 
 void connectToWifi() {
   while (WiFi.status() != WL_CONNECTED) {
-    //    Serial.println(WiFi.status());
-    //    Serial.println("Wifi connection lost");
+    Serial.println(WiFi.status());
+    Serial.println("Connecting to WIFI");
     if (sizeof(pass) > 0)
       WiFi.begin(ssid, pass);
     else
@@ -279,6 +281,7 @@ void connectToWifi() {
     //    Serial.println("Tried restart");
     delay(10000);
   }
+  Serial.println("Connecting success");
   //start udp and wifi server
   server.begin();
   udp.begin(5005);
@@ -286,19 +289,19 @@ void connectToWifi() {
 
 
 void writeImageToDisplay() {
-  // Serial.println("Write image to screen");
+  Serial.println("Write image to screen");
   EPD_7IN5BC_Display();
   DEV_Delay_ms(2000);
-  // Serial.println("Write image to screen done");
+  Serial.println("Write image to screen done");
 }
 
 void clearDisplay() {
-  // Serial.println("Clear display");
+  Serial.println("Clear display");
   Paint_NewImage(IMAGE_BW, EPD_7IN5_WIDTH, EPD_7IN5_HEIGHT, IMAGE_ROTATE_0, IMAGE_COLOR_INVERTED);
   Paint_Clear(BLACK);
   EPD_7IN5_Display();
   hasImage = false;
-  // Serial.println("Clear display done");
+  Serial.println("Clear display done");
 }
 
 void sleepDisplay() {
@@ -306,7 +309,7 @@ void sleepDisplay() {
     EPD_7IN5BC_Sleep();
     DEV_Delay_ms(2000);
     sleeping = true;
-    // Serial.println("Display sleeping");
+    Serial.println("Display sleeping");
   }
 }
 
@@ -318,22 +321,22 @@ void wakeUpDisplay() {
     EPD_7IN5BC_Init();
     DEV_Delay_ms(500);
     sleeping = false;;
-    // Serial.println("Display woke up");
+    Serial.println("Display woke up");
   }
 }
 
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
-  //  Serial.print("SSID: ");
-  // Serial.println(WiFi.SSID());
+  Serial.print("SSID: ");
+  Serial.println(WiFi.SSID());
 
   // print your board's IP address:
   IPAddress ip = WiFi.localIP();
   IPAddress subnet = WiFi.subnetMask();
   broadCast = ip | ~subnet;
-  //  Serial.print("IP Address: ");
-  // Serial.println(ip);
+  Serial.print("IP Address: ");
+  Serial.println(ip);
 
 
   String ipString = ipToString(ip);
